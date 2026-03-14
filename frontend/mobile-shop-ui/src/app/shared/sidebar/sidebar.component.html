@@ -1,0 +1,59 @@
+<div class="sidebar bg-dark text-white" [class.collapsed]="collapsed">
+
+  <h4 class="logo text-center py-3">
+    {{ collapsed ? 'MS' : 'Mobile Shop' }}
+  </h4>
+
+  <ul class="nav flex-column">
+
+    <li class="nav-item">
+      <a routerLink="/dashboard" routerLinkActive="active-link" class="nav-link text-white">
+        <span class="icon">📊</span>
+        @if (!collapsed) { <span>Dashboard</span> }
+      </a>
+    </li>
+
+    <li class="nav-item">
+      <a routerLink="/products" routerLinkActive="active-link" class="nav-link text-white">
+        <span class="icon">📦</span>
+        @if (!collapsed) { <span>Products</span> }
+      </a>
+    </li>
+
+    <li class="nav-item">
+      <a routerLink="/suppliers" routerLinkActive="active-link" class="nav-link text-white">
+        <span class="icon">🏭</span>
+        @if (!collapsed) { <span>Suppliers</span> }
+      </a>
+    </li>
+
+    <li class="nav-item">
+      <a routerLink="/purchase" routerLinkActive="active-link" class="nav-link text-white">
+        <span class="icon">🛒</span>
+        @if (!collapsed) { <span>Purchase</span> }
+      </a>
+    </li>
+
+    <li class="nav-item">
+      <a routerLink="/sales" routerLinkActive="active-link" class="nav-link text-white">
+        <span class="icon">💰</span>
+        @if (!collapsed) { <span>Sales</span> }
+      </a>
+    </li>
+
+    <li class="nav-item">
+      <a routerLink="/inventory" routerLinkActive="active-link" class="nav-link text-white">
+        <span class="icon">📋</span>
+        @if (!collapsed) { <span>Inventory</span> }
+      </a>
+    </li>
+
+    <li class="nav-item">
+      <a routerLink="/report" routerLinkActive="active-link" class="nav-link text-white">
+        <span class="icon">📈</span>
+        @if (!collapsed) { <span>Reports</span> }
+      </a>
+    </li>
+
+  </ul>
+</div>

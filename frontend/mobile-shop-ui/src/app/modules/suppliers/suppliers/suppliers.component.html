@@ -1,0 +1,213 @@
+<div class="page-wrap">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Suppliers</h1>
+      <p class="page-sub">
+        {{ filtered.length }} of {{ suppliers.length }} suppliers
+      </p>
+    </div>
+    <button class="btn-primary" (click)="openAdd()">+ Add Supplier</button>
+  </div>
+
+  <!-- Search -->
+  <div class="card mb">
+    <div class="filter-row" style="gap:10px">
+      <div class="search-bar" style="flex:1;margin-bottom:0">
+        <span class="search-icon">🔍</span>
+        <input placeholder="Search by name, phone, GST or address..."
+          [(ngModel)]="searchTerm"
+          (ngModelChange)="applyFilter()">
+      </div>
+      @if (searchTerm) {
+        <button class="btn-ghost" (click)="clearSearch()">✕ Clear</button>
+      }
+    </div>
+  </div>
+
+  <!-- Stats row -->
+  <div class="inv-kpi-row"
+    style="grid-template-columns:repeat(3,1fr);margin-bottom:16px">
+    <div class="inv-kpi blue">
+      <div class="inv-kpi-label">Total Suppliers</div>
+      <div class="inv-kpi-value">{{ suppliers.length }}</div>
+    </div>
+    <div class="inv-kpi purple" style="">
+      <div class="inv-kpi-label">Filtered</div>
+      <div class="inv-kpi-value" style="color:#7c3aed">{{ filtered.length }}</div>
+    </div>
+    <div class="inv-kpi amber">
+      <div class="inv-kpi-label">Showing Page</div>
+      <div class="inv-kpi-value">{{ page }} / {{ totalPages }}</div>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="card">
+
+    @if (loading) {
+      <div class="empty-state">Loading suppliers...</div>
+    }
+
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Supplier</th>
+          <th>Phone</th>
+          <th>GST Number</th>
+          <th>Address</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (s of paginatedSuppliers; track s.id) {
+          <tr>
+            <td>
+              <div class="product-cell">
+                <span class="product-avatar purple">{{ s.name[0] }}</span>
+                <div>
+                  <div class="product-name">{{ s.name }}</div>
+                </div>
+              </div>
+            </td>
+            <td>{{ s.phone }}</td>
+            <td>
+              @if (s.gstNumber) {
+                <span class="tag">{{ s.gstNumber }}</span>
+              } @else {
+                <span style="color:#d1d5db">—</span>
+              }
+            </td>
+            <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+              {{ s.address || '—' }}
+            </td>
+            <td>
+              <div class="action-btns">
+                <button class="btn-edit"   (click)="openEdit(s)">Edit</button>
+                <button class="btn-delete" (click)="delete(s.id)">Delete</button>
+              </div>
+            </td>
+          </tr>
+        }
+        @if (!loading && filtered.length === 0) {
+          <tr>
+            <td colspan="5" class="empty-state">
+              {{ searchTerm
+                ? 'No suppliers match your search'
+                : 'No suppliers yet — click Add Supplier to get started' }}
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+
+    <!-- Pagination -->
+    @if (filtered.length > pageSize) {
+      <div class="pagination">
+        <div class="page-info">
+          Showing {{ (page-1)*pageSize + 1 }}–{{ minOf(page*pageSize, filtered.length) }}
+          of {{ filtered.length }} suppliers
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <select class="filter-select"
+            style="min-width:90px;padding:5px 10px"
+            [ngModel]="pageSize"
+            (ngModelChange)="changePageSize($event)">
+            @for (s of pageSizes; track s) {
+              <option [value]="s">{{ s }} / page</option>
+            }
+          </select>
+          <div class="page-btns">
+            <button class="page-btn"
+              (click)="changePage(1)" [disabled]="page===1">«</button>
+            <button class="page-btn"
+              (click)="changePage(page-1)" [disabled]="page===1">‹</button>
+            @for (n of pageNumbers; track n) {
+              <button class="page-btn"
+                [class.active]="n===page"
+                (click)="changePage(n)">{{ n }}</button>
+            }
+            <button class="page-btn"
+              (click)="changePage(page+1)"
+              [disabled]="page===totalPages">›</button>
+            <button class="page-btn"
+              (click)="changePage(totalPages)"
+              [disabled]="page===totalPages">»</button>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Add / Edit Modal -->
+  @if (showForm) {
+    <div class="modal-backdrop" (click)="close()">
+      <div class="modal-box" (click)="$event.stopPropagation()">
+
+        <div class="modal-header">
+          <h2>{{ editMode ? 'Edit Supplier' : 'Add Supplier' }}</h2>
+          <button class="modal-close" (click)="close()">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="form-grid">
+
+            <div class="form-group">
+              <label>Supplier Name *</label>
+              <input [(ngModel)]="supplier.name"
+                placeholder="Company or person name">
+            </div>
+
+            <div class="form-group">
+              <label>Phone *</label>
+              <input [(ngModel)]="supplier.phone"
+                placeholder="10-digit mobile number"
+                inputmode="numeric"
+                maxlength="10">
+            </div>
+
+            <div class="form-group">
+              <label>GST Number</label>
+              <input [(ngModel)]="supplier.gstNumber"
+                placeholder="e.g. 27ABCDE1234F1Z5"
+                style="text-transform:uppercase"
+                maxlength="15">
+            </div>
+
+            <div class="form-group full-width">
+              <label>Address</label>
+              <input [(ngModel)]="supplier.address"
+                placeholder="Full address">
+            </div>
+
+          </div>
+
+          <!-- Phone validation hint -->
+@if (isPhoneInvalid) {
+  <div style="font-size:12px;color:#ef4444;margin-top:-8px">
+    ⚠️ Phone must be exactly 10 digits
+  </div>
+}
+
+<!-- GST validation hint -->
+@if (isGstIncomplete) {
+  <div style="font-size:12px;color:#f59e0b;margin-top:4px">
+    GST number must be 15 characters
+  </div>
+}
+
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn-ghost" (click)="close()">Cancel</button>
+          <button class="btn-primary" (click)="save()" [disabled]="saving">
+            {{ saving ? 'Saving...' : (editMode ? 'Update Supplier' : 'Add Supplier') }}
+          </button>
+        </div>
+
+      </div>
+    </div>
+  }
+
+</div>

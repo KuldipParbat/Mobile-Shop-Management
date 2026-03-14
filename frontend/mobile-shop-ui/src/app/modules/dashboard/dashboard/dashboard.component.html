@@ -1,0 +1,107 @@
+<div class="dash-wrap">
+
+  <!-- Header -->
+  <div class="dash-header">
+    <div>
+      <h1 class="dash-title">Mobile Shop Dashboard</h1>
+      <p class="dash-sub">Real-time overview of your store performance</p>
+    </div>
+    <div class="dash-header-right">
+      <span class="live-badge">● Live</span>
+      <span class="date-str">{{ today | date:'EEEE, d MMMM yyyy' }}</span>
+    </div>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="kpi-grid">
+    <div class="kpi-card blue">
+      <div class="kpi-icon">💰</div>
+      <div class="kpi-label">Today's Sales</div>
+      <div class="kpi-value">₹ {{ dashboard?.todaySales | number:'1.0-0' }}</div>
+      <div class="kpi-sub"><span class="trend up">↑ 12.4%</span> vs yesterday</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-icon">📈</div>
+      <div class="kpi-label">Today's Profit</div>
+      <div class="kpi-value">₹ {{ dashboard?.todayProfit | number:'1.0-0' }}</div>
+      <div class="kpi-sub"><span class="trend up">↑ 8.1%</span> vs yesterday</div>
+    </div>
+    <div class="kpi-card amber">
+      <div class="kpi-icon">📦</div>
+      <div class="kpi-label">Total Products</div>
+      <div class="kpi-value">{{ dashboard?.totalProducts }}</div>
+      <div class="kpi-sub">Active in inventory</div>
+    </div>
+    <div class="kpi-card purple">
+      <div class="kpi-icon">🏭</div>
+      <div class="kpi-label">Total Suppliers</div>
+      <div class="kpi-value">{{ dashboard?.totalSuppliers }}</div>
+      <div class="kpi-sub">Registered partners</div>
+    </div>
+    <div class="kpi-card red">
+      <div class="kpi-icon">⚠️</div>
+      <div class="kpi-label">Low Stock</div>
+      <div class="kpi-value danger">{{ dashboard?.lowStockProducts }}</div>
+      <div class="kpi-sub"><span class="trend down">Needs reorder</span></div>
+    </div>
+  </div>
+
+  <!-- Main Grid -->
+  <div class="main-grid">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Weekly Sales Performance</span>
+        <span class="card-badge">This week</span>
+      </div>
+      <canvas id="salesChart"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Low Stock Alert</span>
+        <span class="card-badge urgent">Urgent</span>
+      </div>
+      <table class="stock-table">
+        <thead><tr><th>Product</th><th>Category</th><th>Stock</th></tr></thead>
+        <tbody>
+          @for (p of lowStockProducts; track p.name) {
+            <tr>
+              <td class="product-name">{{ p.name }}</td>
+              <td class="product-cat">{{ p.category }}</td>
+              <td>
+                <span class="stock-pill" [class.critical]="p.stock <= 2" [class.low]="p.stock > 2">
+                  {{ p.stock }} left
+                </span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Bottom Grid -->
+  <div class="bottom-grid">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Category Performance</span>
+        <span class="card-badge">Revenue share</span>
+      </div>
+      @for (cat of categories; track cat.name) {
+        <div class="cat-row">
+          <span>{{ cat.name }}</span>
+          <span class="cat-pct" [style.color]="cat.color">{{ cat.pct }}%</span>
+        </div>
+        <div class="bar-wrap">
+          <div class="bar-fill" [style.width.%]="cat.pct" [style.background]="cat.color"></div>
+        </div>
+      }
+    </div>
+    <div class="card donut-card">
+      <div class="card-header">
+        <span class="card-title">Sales Breakdown</span>
+      </div>
+      <canvas id="donutChart"></canvas>
+    </div>
+  </div>
+
+</div>

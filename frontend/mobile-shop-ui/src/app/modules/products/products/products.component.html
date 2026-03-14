@@ -1,0 +1,253 @@
+<div class="page-wrap">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Products</h1>
+      <p class="page-sub">
+        {{ filtered.length }} of {{ products.length }} products
+      </p>
+    </div>
+    <button class="btn-primary" (click)="openAdd()">+ Add Product</button>
+  </div>
+
+  <!-- Filters -->
+  <div class="card mb">
+    <div class="filter-row" style="flex-wrap:wrap;gap:10px">
+
+      <div class="search-bar" style="flex:1;min-width:200px;margin-bottom:0">
+        <span class="search-icon">🔍</span>
+        <input placeholder="Search by name, brand, model or category..."
+          [(ngModel)]="searchTerm"
+          (ngModelChange)="applyFilter()">
+      </div>
+
+      <select class="filter-select"
+        [(ngModel)]="filterCategory"
+        (ngModelChange)="applyFilter()">
+        <option value="">All Categories</option>
+        @for (cat of categories; track cat) {
+          <option [value]="cat">{{ cat }}</option>
+        }
+      </select>
+
+      <select class="filter-select"
+        [(ngModel)]="filterTracking"
+        (ngModelChange)="applyFilter()">
+        <option value="">All Tracking</option>
+        <option value="QUANTITY">Quantity</option>
+        <option value="IMEI">IMEI</option>
+      </select>
+
+      @if (searchTerm || filterCategory || filterTracking) {
+        <button class="btn-ghost" (click)="clearFilters()">✕ Clear</button>
+      }
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="card">
+
+    @if (loading) {
+      <div class="empty-state">Loading products...</div>
+    }
+
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th>Category</th>
+          <th>Purchase</th>
+          <th>Selling</th>
+          <th>Margin</th>
+          <th>Stock</th>
+          <th>Tracking</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (p of paginatedProducts; track p.id) {
+          <tr>
+            <td>
+              <div class="product-cell">
+                <span class="product-avatar">{{ p.name[0] }}</span>
+                <div>
+                  <div class="product-name">{{ p.name }}</div>
+                  <div class="product-meta">{{ p.brand }} · {{ p.model }}</div>
+                </div>
+              </div>
+            </td>
+            <td><span class="tag">{{ p.category }}</span></td>
+            <td>₹ {{ p.purchasePrice | number:'1.0-0' }}</td>
+            <td>₹ {{ p.sellingPrice | number:'1.0-0' }}</td>
+            <td>
+              <span class="margin-pill"
+                [class.good]="(p.sellingPrice-p.purchasePrice)/p.sellingPrice > 0.2"
+                [class.low]="(p.sellingPrice-p.purchasePrice)/p.sellingPrice <= 0.2">
+                {{ ((p.sellingPrice - p.purchasePrice) / p.sellingPrice * 100)
+                  | number:'1.0-0' }}%
+              </span>
+            </td>
+            <td>
+              <span
+                [class.stock-low]="p.stock > 0 && p.stock <= 5"
+                [class.stock-out]="p.stock === 0"
+                [class.stock-ok]="p.stock > 5">
+                {{ p.stock }}
+              </span>
+            </td>
+            <td>
+              <span class="tag"
+                [class.imei-tag]="p.trackingType === 'IMEI'">
+                {{ p.trackingType }}
+              </span>
+            </td>
+            <td>
+              <div class="action-btns">
+                <button class="btn-edit"   (click)="openEdit(p)">Edit</button>
+                <button class="btn-delete" (click)="delete(p.id)">Delete</button>
+              </div>
+            </td>
+          </tr>
+        }
+        @if (!loading && filtered.length === 0) {
+          <tr>
+            <td colspan="8" class="empty-state">
+              {{ searchTerm || filterCategory || filterTracking
+                ? 'No products match your filters'
+                : 'No products yet — click Add Product to get started' }}
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+
+    <!-- Pagination -->
+    @if (filtered.length > pageSize) {
+      <div class="pagination">
+        <div class="page-info">
+          Showing {{ (page-1)*pageSize + 1 }}–{{ minOf(page*pageSize, filtered.length) }}
+          of {{ filtered.length }} products
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <select class="filter-select"
+            style="min-width:90px;padding:5px 10px"
+            [ngModel]="pageSize"
+            (ngModelChange)="changePageSize($event)">
+            @for (s of pageSizes; track s) {
+              <option [value]="s">{{ s }} / page</option>
+            }
+          </select>
+          <div class="page-btns">
+            <button class="page-btn"
+              (click)="changePage(1)" [disabled]="page===1">«</button>
+            <button class="page-btn"
+              (click)="changePage(page-1)" [disabled]="page===1">‹</button>
+            @for (n of pageNumbers; track n) {
+              <button class="page-btn"
+                [class.active]="n===page"
+                (click)="changePage(n)">{{ n }}</button>
+            }
+            <button class="page-btn"
+              (click)="changePage(page+1)" [disabled]="page===totalPages">›</button>
+            <button class="page-btn"
+              (click)="changePage(totalPages)" [disabled]="page===totalPages">»</button>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Add/Edit Modal -->
+  @if (showForm) {
+    <div class="modal-backdrop" (click)="closeForm()">
+      <div class="modal-box" (click)="$event.stopPropagation()">
+
+        <div class="modal-header">
+          <h2>{{ editMode ? 'Edit Product' : 'Add Product' }}</h2>
+          <button class="modal-close" (click)="closeForm()">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Product Name *</label>
+              <input [(ngModel)]="product.name"
+                placeholder="e.g. iPhone 15">
+            </div>
+            <div class="form-group">
+              <label>Brand *</label>
+              <input [(ngModel)]="product.brand"
+                placeholder="e.g. Apple">
+            </div>
+            <div class="form-group">
+              <label>Model</label>
+              <input [(ngModel)]="product.model"
+                placeholder="e.g. A2846">
+            </div>
+            <div class="form-group">
+              <label>Category *</label>
+              <input [(ngModel)]="product.category"
+                placeholder="e.g. Smartphone"
+                list="categoryList">
+              <!-- datalist for quick selection from existing categories -->
+              <datalist id="categoryList">
+                @for (cat of categories; track cat) {
+                  <option [value]="cat">
+                }
+              </datalist>
+            </div>
+            <div class="form-group">
+              <label>Purchase Price *</label>
+              <div class="input-prefix">
+                <span>₹</span>
+                <input type="number"
+                  [(ngModel)]="product.purchasePrice" min="0">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Selling Price *</label>
+              <div class="input-prefix">
+                <span>₹</span>
+                <input type="number"
+                  [(ngModel)]="product.sellingPrice" min="0">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Tracking Type *</label>
+              <select [(ngModel)]="product.trackingType">
+                <option value="QUANTITY">Quantity</option>
+                <option value="IMEI">IMEI</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Margin preview -->
+          @if (product.purchasePrice > 0 && product.sellingPrice > 0) {
+            <div class="margin-preview">
+              Margin: <strong>{{ margin }}%</strong>
+              · Profit per unit:
+              <strong>
+                ₹ {{ product.sellingPrice - product.purchasePrice | number:'1.0-0' }}
+              </strong>
+              @if (product.sellingPrice < product.purchasePrice) {
+                <span style="color:#ef4444;margin-left:8px">
+                  ⚠️ Selling below cost!
+                </span>
+              }
+            </div>
+          }
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn-ghost" (click)="closeForm()">Cancel</button>
+          <button class="btn-primary" (click)="save()" [disabled]="saving">
+            {{ saving ? 'Saving...' : (editMode ? 'Update Product' : 'Add Product') }}
+          </button>
+        </div>
+
+      </div>
+    </div>
+  }
+
+</div>

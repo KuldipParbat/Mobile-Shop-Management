@@ -1,0 +1,153 @@
+<div class="page-wrap">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Inventory</h1>
+      <p class="page-sub">Track stock levels and movement history</p>
+    </div>
+    <div class="tab-pills">
+      <button [class.active]="activeTab==='stock'"   (click)="activeTab='stock'">Stock</button>
+      <button [class.active]="activeTab==='history'" (click)="activeTab='history'">History</button>
+    </div>
+  </div>
+
+  @if (activeTab === 'stock') {
+
+    <!-- KPI row -->
+    <div class="inv-kpi-row">
+      <div class="inv-kpi blue">
+        <div class="inv-kpi-label">Total Products</div>
+        <div class="inv-kpi-value">{{ inventory.length }}</div>
+      </div>
+      <div class="inv-kpi green">
+        <div class="inv-kpi-label">Stock Value</div>
+        <div class="inv-kpi-value">₹ {{ totalStockValue | number:'1.0-0' }}</div>
+      </div>
+      <div class="inv-kpi amber">
+        <div class="inv-kpi-label">Low Stock</div>
+        <div class="inv-kpi-value">{{ lowStockCount }}</div>
+      </div>
+      <div class="inv-kpi red">
+        <div class="inv-kpi-label">Out of Stock</div>
+        <div class="inv-kpi-value">{{ outOfStockCount }}</div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-row">
+      <div class="search-bar" style="flex:1">
+        <span class="search-icon">🔍</span>
+        <input placeholder="Search product or brand..."
+               [(ngModel)]="searchTerm" (ngModelChange)="applyFilter()">
+      </div>
+      <select class="filter-select" [(ngModel)]="filterCategory" (ngModelChange)="applyFilter()">
+        <option value="">All Categories</option>
+        @for (cat of categories; track cat) {
+          <option [value]="cat">{{ cat }}</option>
+        }
+      </select>
+    </div>
+
+    <!-- Table -->
+    <div class="card">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Category</th>
+            <th>Tracking</th>
+            <th>Purchase Price</th>
+            <th>Selling Price</th>
+            <th>Stock</th>
+            <th>Stock Value</th>
+            <th>Status</th>
+            <th>History</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (p of filtered; track p.productId) {
+            <tr>
+              <td>
+                <div class="product-cell">
+                  <span class="product-avatar">{{ p.productName[0] }}</span>
+                  <div>
+                    <div class="product-name">{{ p.productName }}</div>
+                    <div class="product-meta">{{ p.brand }}</div>
+                  </div>
+                </div>
+              </td>
+              <td><span class="tag">{{ p.category }}</span></td>
+              <td><span class="tag" [class.imei-tag]="p.trackingType==='IMEI'">{{ p.trackingType }}</span></td>
+              <td>₹ {{ p.purchasePrice | number:'1.0-0' }}</td>
+              <td>₹ {{ p.sellingPrice | number:'1.0-0' }}</td>
+              <td>
+                <span [class.stock-low]="p.stock <= 5 && p.stock > 0"
+                      [class.stock-out]="p.stock === 0"
+                      [class.stock-ok]="p.stock > 5">
+                  {{ p.stock }}
+                </span>
+              </td>
+              <td>₹ {{ p.stockValue | number:'1.0-0' }}</td>
+              <td>
+                @if (p.stock === 0) {
+                  <span class="status-pill out">Out of Stock</span>
+                } @else if (p.stock <= 5) {
+                  <span class="status-pill low">Low Stock</span>
+                } @else {
+                  <span class="status-pill ok">In Stock</span>
+                }
+              </td>
+              <td>
+                <button class="btn-edit" (click)="viewHistory(p)">View</button>
+              </td>
+            </tr>
+          }
+          @if (!loading && filtered.length === 0) {
+            <tr><td colspan="9" class="empty-state">No products found</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  @if (activeTab === 'history') {
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">
+          {{ selectedProduct ? 'Movement History — ' + selectedProduct.productName : 'Select a product to view history' }}
+        </span>
+        <button class="btn-ghost" (click)="activeTab='stock'">← Back</button>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Type</th>
+            <th>Quantity</th>
+            <th>Remaining Stock</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (h of history; track h.id) {
+            <tr>
+              <td>{{ h.movementDate | date:'dd MMM yyyy, hh:mm a' }}</td>
+              <td>
+                <span class="tag" [class.purchase-tag]="h.movementType==='PURCHASE'"
+                                  [class.sale-tag]="h.movementType==='SALE'">
+                  {{ h.movementType }}
+                </span>
+              </td>
+              <td [class.qty-in]="h.movementType==='PURCHASE'"
+                  [class.qty-out]="h.movementType==='SALE'">
+                {{ h.movementType === 'PURCHASE' ? '+' : '-' }}{{ h.quantity }}
+              </td>
+              <td>{{ h.remainingStock }}</td>
+            </tr>
+          }
+          @if (history.length === 0) {
+            <tr><td colspan="4" class="empty-state">No history found</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

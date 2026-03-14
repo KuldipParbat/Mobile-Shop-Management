@@ -1,0 +1,362 @@
+<div class="page-wrap">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Reports</h1>
+      <p class="page-sub">Business insights and analytics</p>
+    </div>
+  </div>
+
+  <!-- Global Date Filter -->
+  <div class="card mb">
+    <div class="card-label">Filter All Reports by Date</div>
+    <div class="filter-row" style="flex-wrap:wrap;gap:10px">
+
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn-secondary" (click)="setQuickFilter('today')">Today</button>
+        <button class="btn-secondary" (click)="setQuickFilter('week')">This Week</button>
+        <button class="btn-secondary" (click)="setQuickFilter('month')">This Month</button>
+        <button class="btn-secondary" (click)="setQuickFilter('quarter')">Last 3 Months</button>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:8px">
+        <label style="font-size:12px;font-weight:600;white-space:nowrap">From</label>
+        <input type="date" class="filter-select" [(ngModel)]="filterFrom">
+      </div>
+
+      <div style="display:flex;align-items:center;gap:8px">
+        <label style="font-size:12px;font-weight:600;white-space:nowrap">To</label>
+        <input type="date" class="filter-select" [(ngModel)]="filterTo">
+      </div>
+
+      <button class="btn-primary" (click)="applyDateFilter()">Apply Filter</button>
+
+      @if (isFiltered) {
+        <button class="btn-ghost" (click)="clearDateFilter()">✕ Clear</button>
+      }
+    </div>
+
+    @if (isFiltered) {
+      <div style="margin-top:10px;font-size:12px;color:#2563eb;font-weight:500">
+        📅 Filtered: {{ filterFrom | date:'dd MMM yyyy' }}
+        to {{ filterTo | date:'dd MMM yyyy' }}
+      </div>
+    }
+  </div>
+
+  <!-- Tab Navigation -->
+  <div class="report-tabs">
+    <button [class.active]="activeTab==='daily'"
+      (click)="switchTab('daily')">Daily Sales</button>
+    <button [class.active]="activeTab==='weekly'"
+      (click)="switchTab('weekly')">Weekly Summary</button>
+    <button [class.active]="activeTab==='product'"
+      (click)="switchTab('product')">Product Sales</button>
+    <button [class.active]="activeTab==='payment'"
+      (click)="switchTab('payment')">Payment Mode</button>
+    <button [class.active]="activeTab==='profitloss'"
+      (click)="switchTab('profitloss')">Profit & Loss</button>
+    <button [class.active]="activeTab==='supplier'"
+      (click)="switchTab('supplier')">Supplier Purchases</button>
+  </div>
+
+  @if (loading) {
+    <div class="card" style="text-align:center;padding:40px;color:#9ca3af">
+      Loading reports...
+    </div>
+  }
+
+  <!-- ══ DAILY SALES ══ -->
+  @if (!loading && activeTab === 'daily') {
+
+    <div class="inv-kpi-row" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px">
+      <div class="inv-kpi blue">
+        <div class="inv-kpi-label">Total Days</div>
+        <div class="inv-kpi-value">{{ dailySales.length }}</div>
+      </div>
+      <div class="inv-kpi green">
+        <div class="inv-kpi-label">
+          {{ isFiltered ? 'Period Sales' : 'Last 30 Days' }}
+        </div>
+        <div class="inv-kpi-value">₹ {{ totalDailySales | number:'1.0-0' }}</div>
+      </div>
+      <div class="inv-kpi amber">
+        <div class="inv-kpi-label">Daily Average</div>
+        <div class="inv-kpi-value">
+          ₹ {{ dailySales.length > 0
+            ? (totalDailySales / dailySales.length | number:'1.0-0')
+            : 0 }}
+        </div>
+      </div>
+    </div>
+
+    <div class="report-grid">
+      <div class="card chart-card">
+        <div class="card-header">
+          <span class="card-title">Daily Sales Chart</span>
+          <span class="card-badge">
+            {{ isFiltered ? filterFrom + ' to ' + filterTo : 'Last 30 days' }}
+          </span>
+        </div>
+        @if (dailySales.length > 0) {
+          <canvas id="dailyChart"></canvas>
+        } @else {
+          <div class="empty-state">No data for selected period</div>
+        }
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Daily Breakdown</span>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr><th>Date</th><th>Total Sales</th></tr>
+          </thead>
+          <tbody>
+            @for (d of dailySales; track d.date) {
+              <tr>
+                <td>{{ d.date | date:'dd MMM yyyy' }}</td>
+                <td><strong>₹ {{ d.totalSales | number:'1.0-0' }}</strong></td>
+              </tr>
+            }
+            @if (dailySales.length === 0) {
+              <tr><td colspan="2" class="empty-state">No data</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- ══ WEEKLY SUMMARY ══ -->
+  @if (!loading && activeTab === 'weekly') {
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Weekly Summary — Last 12 Weeks</span>
+        <span class="card-badge">Not affected by date filter</span>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Week Starting</th>
+            <th>Orders</th>
+            <th>Total Sales</th>
+            <th>Est. Profit</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (w of weeklySummary; track w.week) {
+            <tr>
+              <td>{{ w.week }}</td>
+              <td>{{ w.totalOrders }}</td>
+              <td>₹ {{ w.totalSales | number:'1.0-0' }}</td>
+              <td class="profit-text">₹ {{ w.totalProfit | number:'1.0-0' }}</td>
+            </tr>
+          }
+          @if (weeklySummary.length === 0) {
+            <tr><td colspan="4" class="empty-state">No data</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  <!-- ══ PRODUCT SALES ══ -->
+  @if (!loading && activeTab === 'product') {
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Product-wise Sales</span>
+        <span class="card-badge">All time</span>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr><th>Product</th><th>Units Sold</th><th>Revenue</th></tr>
+        </thead>
+        <tbody>
+          @for (p of productSales; track p.productName) {
+            <tr>
+              <td>
+                <div class="product-cell">
+                  <span class="product-avatar">{{ p.productName[0] }}</span>
+                  <span class="product-name">{{ p.productName }}</span>
+                </div>
+              </td>
+              <td>{{ p.totalSold }} units</td>
+              <td><strong>₹ {{ p.revenue | number:'1.0-0' }}</strong></td>
+            </tr>
+          }
+          @if (productSales.length === 0) {
+            <tr><td colspan="3" class="empty-state">No data</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  <!-- ══ PAYMENT MODE ══ -->
+  @if (!loading && activeTab === 'payment') {
+    <div class="report-grid">
+      <div class="card chart-card">
+        <div class="card-header">
+          <span class="card-title">Payment Mode Split</span>
+          <span class="card-badge">
+            {{ isFiltered ? 'Filtered period' : 'Last 30 days' }}
+          </span>
+        </div>
+        @if (paymentMode.length > 0) {
+          <canvas id="paymentChart" style="max-height:280px"></canvas>
+        } @else {
+          <div class="empty-state">No data for selected period</div>
+        }
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Breakdown</span>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr><th>Mode</th><th>Orders</th><th>Total</th></tr>
+          </thead>
+          <tbody>
+            @for (p of paymentMode; track p.paymentMode) {
+              <tr>
+                <td>
+                  <span class="tag"
+                    [class.cash]="p.paymentMode==='CASH'"
+                    [class.upi]="p.paymentMode==='UPI'"
+                    [class.card-tag]="p.paymentMode==='CARD'">
+                    {{ p.paymentMode }}
+                  </span>
+                </td>
+                <td>{{ p.totalOrders }}</td>
+                <td><strong>₹ {{ p.totalAmount | number:'1.0-0' }}</strong></td>
+              </tr>
+            }
+            @if (paymentMode.length === 0) {
+              <tr><td colspan="3" class="empty-state">No data</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- ══ PROFIT & LOSS ══ -->
+  @if (!loading && activeTab === 'profitloss') {
+
+    <div class="pl-kpi-row">
+      <div class="inv-kpi blue">
+        <div class="inv-kpi-label">
+          {{ isFiltered ? 'Period Revenue' : 'Revenue (30d)' }}
+        </div>
+        <div class="inv-kpi-value">₹ {{ totalRevenue | number:'1.0-0' }}</div>
+      </div>
+      <div class="inv-kpi green">
+        <div class="inv-kpi-label">
+          {{ isFiltered ? 'Period Profit' : 'Profit (30d)' }}
+        </div>
+        <div class="inv-kpi-value">₹ {{ totalProfit | number:'1.0-0' }}</div>
+      </div>
+      <div class="inv-kpi amber">
+        <div class="inv-kpi-label">Avg Margin</div>
+        <div class="inv-kpi-value">{{ avgMargin }}%</div>
+      </div>
+    </div>
+
+    <div class="card chart-card mb">
+      <div class="card-header">
+        <span class="card-title">Revenue vs Cost vs Profit</span>
+        <span class="card-badge">
+          {{ isFiltered ? filterFrom + ' to ' + filterTo : 'Last 30 days' }}
+        </span>
+      </div>
+      @if (profitLoss.length > 0) {
+        <canvas id="profitChart"></canvas>
+      } @else {
+        <div class="empty-state">No data for selected period</div>
+      }
+    </div>
+
+    <div class="card">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Revenue</th>
+            <th>Cost</th>
+            <th>Profit</th>
+            <th>Margin</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (p of profitLoss; track p.date) {
+            <tr>
+              <td>{{ p.date | date:'dd MMM yyyy' }}</td>
+              <td>₹ {{ p.totalRevenue | number:'1.0-0' }}</td>
+              <td>₹ {{ p.totalCost | number:'1.0-0' }}</td>
+              <td class="profit-text">₹ {{ p.profit | number:'1.0-0' }}</td>
+              <td>
+                <span class="margin-pill"
+                  [class.good]="p.margin > 20"
+                  [class.low]="p.margin <= 20">
+                  {{ p.margin }}%
+                </span>
+              </td>
+            </tr>
+          }
+          @if (profitLoss.length === 0) {
+            <tr><td colspan="5" class="empty-state">No data</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  <!-- ══ SUPPLIER PURCHASES ══ -->
+  @if (!loading && activeTab === 'supplier') {
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Purchase Report by Supplier</span>
+        <span class="card-badge">
+          {{ isFiltered ? 'Filtered period' : 'Last 30 days' }}
+        </span>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Supplier</th>
+            <th>Total Purchases</th>
+            <th>Total Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (s of supplierPurchases; track s.supplierName) {
+            <tr>
+              <td>
+                <div class="product-cell">
+                  <span class="product-avatar purple">
+                    {{ s.supplierName[0] }}
+                  </span>
+                  <span class="product-name">{{ s.supplierName }}</span>
+                </div>
+              </td>
+              <td>{{ s.totalPurchases }} orders</td>
+              <td><strong>₹ {{ s.totalAmount | number:'1.0-0' }}</strong></td>
+            </tr>
+          }
+          @if (supplierPurchases.length === 0) {
+            <tr>
+              <td colspan="3" class="empty-state">
+                {{ isFiltered
+                  ? 'No purchases found for selected period'
+                  : 'No data' }}
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+</div>

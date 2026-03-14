@@ -1,0 +1,274 @@
+<div class="page-wrap">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Sales</h1>
+      <p class="page-sub">Record new sales and view history</p>
+    </div>
+    <div class="tab-pills">
+      <button [class.active]="activeTab==='sale'"    (click)="activeTab='sale'">New Sale</button>
+      <button [class.active]="activeTab==='history'" (click)="activeTab='history'">History</button>
+    </div>
+  </div>
+
+  <!-- ══ NEW SALE ══ -->
+  @if (activeTab === 'sale') {
+
+    <div class="card mb">
+      <div class="card-label">Add Product to Cart</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Product *</label>
+          <select [(ngModel)]="selectedProductId" (ngModelChange)="onProductSelect()">
+            <option value="0">Select Product</option>
+            @for (p of products; track p.id) {
+              <option [value]="p.id" [disabled]="p.stock === 0">
+                {{ p.name }} ({{ p.brand }}) {{ p.stock === 0 ? '— Out of stock' : '— Stock: ' + p.stock }}
+              </option>
+            }
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Selling Price *</label>
+          <div class="input-prefix">
+            <span>₹</span>
+            <input type="number" [(ngModel)]="sellingPrice" min="0">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Discount (₹)</label>
+          <div class="input-prefix">
+            <span>₹</span>
+            <input type="number" [(ngModel)]="discount" min="0">
+          </div>
+        </div>
+      </div>
+      <button class="btn-secondary" (click)="addToCart()">+ Add to Cart</button>
+    </div>
+
+    @if (cart.length > 0) {
+      <div class="card mb">
+        <div class="card-label">Cart ({{ cart.length }} item{{ cart.length > 1 ? 's' : '' }})</div>
+
+        @for (item of cart; track item.product.id; let i = $index) {
+          <div class="cart-item">
+            <div class="cart-item-header">
+              <div>
+                <span class="cart-product-name">{{ item.product.name }}</span>
+                <span class="cart-meta">
+                  {{ item.product.brand }} ·
+                  ₹{{ item.sellingPrice | number:'1.0-0' }}
+                  @if (item.discount > 0) { · Disc: ₹{{ item.discount | number:'1.0-0' }} }
+                  · Stock: {{ item.product.stock }}
+                </span>
+              </div>
+              <button class="btn-delete" (click)="removeFromCart(i)">Remove</button>
+            </div>
+
+            @if (item.product.trackingType === 'IMEI') {
+              <div class="imei-section">
+                <div class="imei-header">
+                  <span>📱 IMEI Numbers</span>
+                  <span class="imei-count" [class.complete]="item.imeiNumbers.length > 0">
+                    {{ item.imeiNumbers.length }} unit{{ item.imeiNumbers.length !== 1 ? 's' : '' }}
+                  </span>
+                </div>
+                <div class="imei-hint">USB barcode scanner, mobile camera, or manual entry</div>
+                <div class="imei-input-row">
+                  <input class="imei-input"
+                    [(ngModel)]="item.imeiInput"
+                    (keyup.enter)="addImei(item)"
+                    placeholder="Scan or type IMEI (15+ digits) then Enter"
+                    autocomplete="off"
+                    inputmode="numeric">
+                  <button class="btn-secondary" (click)="addImei(item)">Add</button>
+                </div>
+                @if (item.imeiNumbers.length > 0) {
+                  <div class="imei-chips">
+                    @for (imei of item.imeiNumbers; track imei; let j = $index) {
+                      <span class="imei-chip">
+                        {{ imei }}
+                        <button (click)="removeImei(item, j)">✕</button>
+                      </span>
+                    }
+                  </div>
+                }
+              </div>
+            } @else {
+              <div class="qty-row">
+                <label>Quantity</label>
+                <div class="qty-control">
+                  <button (click)="decreaseQty(item)">−</button>
+                  <input type="number" [(ngModel)]="item.quantity" min="1">
+                  <button (click)="increaseQty(item)">+</button>
+                </div>
+                <span class="stock-info">{{ item.product.stock }} in stock</span>
+              </div>
+            }
+          </div>
+        }
+
+        <div class="cart-footer">
+          <div class="payment-select">
+            <label>Payment Mode</label>
+            <div class="payment-options">
+              @for (mode of ['CASH','UPI','CARD']; track mode) {
+                <button class="payment-btn"
+                  [class.active]="paymentMode === mode"
+                  (click)="paymentMode = mode">
+                  {{ mode === 'CASH' ? '💵' : mode === 'UPI' ? '📲' : '💳' }} {{ mode }}
+                </button>
+              }
+            </div>
+          </div>
+          <div class="cart-summary">
+            @if (totalDiscount > 0) {
+              <div class="summary-row">
+                <span>Subtotal</span>
+                <span>₹ {{ cartSubtotal + totalDiscount | number:'1.0-0' }}</span>
+              </div>
+              <div class="summary-row discount">
+                <span>Discount</span>
+                <span>− ₹ {{ totalDiscount | number:'1.0-0' }}</span>
+              </div>
+            }
+            <div class="summary-row total">
+              <span>Total</span>
+              <span>₹ {{ cartSubtotal | number:'1.0-0' }}</span>
+            </div>
+            <button class="btn-success w-full" (click)="completeSale()">
+              ✓ Complete Sale
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+  }
+
+  <!-- ══ HISTORY ══ -->
+  @if (activeTab === 'history') {
+
+    <!-- Summary KPI -->
+    <div class="inv-kpi-row" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px">
+      <div class="inv-kpi blue">
+        <div class="inv-kpi-label">Total Records</div>
+        <div class="inv-kpi-value">{{ history.length }}</div>
+      </div>
+      <div class="inv-kpi green">
+        <div class="inv-kpi-label">
+          {{ isFiltered ? 'Period Total' : 'All Time Total' }}
+        </div>
+        <div class="inv-kpi-value">₹ {{ totalSalesAmount | number:'1.0-0' }}</div>
+      </div>
+      <div class="inv-kpi amber">
+        <div class="inv-kpi-label">Showing Page</div>
+        <div class="inv-kpi-value">{{ page }} / {{ totalPages || 1 }}</div>
+      </div>
+    </div>
+
+    <!-- Date Filter Card -->
+    <div class="card mb">
+      <div class="card-label">Filter by Date</div>
+      <div class="filter-row" style="flex-wrap:wrap;gap:10px">
+
+        <!-- Quick filters -->
+        <div style="display:flex;gap:6px">
+          <button class="btn-secondary" (click)="setQuickFilter('today')">Today</button>
+          <button class="btn-secondary" (click)="setQuickFilter('week')">This Week</button>
+          <button class="btn-secondary" (click)="setQuickFilter('month')">This Month</button>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:8px">
+          <label style="font-size:12px;font-weight:600;white-space:nowrap">From</label>
+          <input type="date" class="filter-select" [(ngModel)]="filterFrom">
+        </div>
+
+        <div style="display:flex;align-items:center;gap:8px">
+          <label style="font-size:12px;font-weight:600;white-space:nowrap">To</label>
+          <input type="date" class="filter-select" [(ngModel)]="filterTo">
+        </div>
+
+        <button class="btn-primary" (click)="applyDateFilter()">Search</button>
+
+        @if (isFiltered) {
+          <button class="btn-ghost" (click)="clearDateFilter()">✕ Clear</button>
+        }
+      </div>
+
+      @if (isFiltered) {
+        <div style="margin-top:10px;font-size:12px;color:#2563eb;font-weight:500">
+          Showing results from {{ filterFrom | date:'dd MMM yyyy' }} to {{ filterTo | date:'dd MMM yyyy' }}
+          — {{ history.length }} record{{ history.length !== 1 ? 's' : '' }} found
+        </div>
+      }
+    </div>
+
+    <!-- Table -->
+    <div class="card">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Date</th>
+            <th>Payment</th>
+            <th>Items</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (h of paginatedHistory; track h.id) {
+            <tr>
+              <td style="color:#9ca3af;font-size:12px">{{ h.id }}</td>
+              <td>{{ h.saleDate | date:'dd MMM yyyy' }}</td>
+              <td>
+                <span class="tag"
+                  [class.cash]="h.paymentMode==='CASH'"
+                  [class.upi]="h.paymentMode==='UPI'"
+                  [class.card-tag]="h.paymentMode==='CARD'">
+                  {{ h.paymentMode }}
+                </span>
+              </td>
+              <td>{{ h.itemCount }} item{{ h.itemCount !== 1 ? 's' : '' }}</td>
+              <td><strong>₹ {{ h.totalAmount | number:'1.0-0' }}</strong></td>
+            </tr>
+          }
+          @if (history.length === 0) {
+            <tr>
+              <td colspan="5" class="empty-state">
+                {{ isFiltered ? 'No sales found for selected date range' : 'No sales yet' }}
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+
+      <!-- Pagination -->
+      @if (history.length > pageSize) {
+        <div class="pagination">
+          <div class="page-info">
+            Showing {{ (page-1)*pageSize + 1 }}–{{ minOf(page*pageSize, history.length) }}
+            of {{ history.length }} records
+          </div>
+          <div style="display:flex;align-items:center;gap:12px">
+            <select class="filter-select"
+              style="min-width:90px;padding:5px 10px"
+              [ngModel]="pageSize"
+              (ngModelChange)="changePageSize($event)">
+              @for (s of pageSizes; track s) {
+                <option [value]="s">{{ s }} / page</option>
+              }
+            </select>
+            <div class="page-btns">
+              <button class="page-btn" (click)="changePage(1)"        [disabled]="page===1">«</button>
+              <button class="page-btn" (click)="changePage(page-1)"   [disabled]="page===1">‹</button>
+              @for (n of pageNumbers; track n) {
+                <button class="page-btn" [class.active]="n===page" (click)="changePage(n)">{{ n }}</button>
+              }
+              <button class="page-btn" (click)="changePage(page+1)"   [disabled]="page===totalPages">›</button>
+              <button class="page-btn" (click)="changePage(totalPages)"[disabled]="page===totalPages">»</button>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>
