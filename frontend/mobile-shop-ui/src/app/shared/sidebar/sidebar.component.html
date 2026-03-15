@@ -1,7 +1,8 @@
 <div class="sidebar bg-dark text-white" [class.collapsed]="collapsed">
 
-  <h4 class="logo text-center py-3">
-    {{ collapsed ? 'MS' : 'Mobile Shop' }}
+  <h4 class="logo text-center">
+    @if (!collapsed) { <span>{{ authService.shopName }}</span> }
+    @else { <span>MS</span> }
   </h4>
 
   <ul class="nav flex-column">
@@ -20,12 +21,15 @@
       </a>
     </li>
 
-    <li class="nav-item">
-      <a routerLink="/suppliers" routerLinkActive="active-link" class="nav-link text-white">
-        <span class="icon">🏭</span>
-        @if (!collapsed) { <span>Suppliers</span> }
-      </a>
-    </li>
+    <!-- Owner only -->
+    @if (authService.isOwner()) {
+      <li class="nav-item">
+        <a routerLink="/suppliers" routerLinkActive="active-link" class="nav-link text-white">
+          <span class="icon">🏭</span>
+          @if (!collapsed) { <span>Suppliers</span> }
+        </a>
+      </li>
+    }
 
     <li class="nav-item">
       <a routerLink="/purchase" routerLinkActive="active-link" class="nav-link text-white">
@@ -48,12 +52,29 @@
       </a>
     </li>
 
-    <li class="nav-item">
-      <a routerLink="/report" routerLinkActive="active-link" class="nav-link text-white">
-        <span class="icon">📈</span>
-        @if (!collapsed) { <span>Reports</span> }
-      </a>
-    </li>
+    <!-- Owner only -->
+    @if (authService.isOwner()) {
+      <li class="nav-item">
+        <a routerLink="/reports" routerLinkActive="active-link" class="nav-link text-white">
+          <span class="icon">📈</span>
+          @if (!collapsed) { <span>Reports</span> }
+        </a>
+      </li>
+    }
 
   </ul>
+
+  <!-- User info at bottom of sidebar -->
+  <div class="sidebar-footer" [class.collapsed]="collapsed">
+    @if (!collapsed) {
+      <div class="sidebar-user">
+        <div class="sidebar-avatar">{{ authService.userName[0] }}</div>
+        <div>
+          <div class="sidebar-user-name">{{ authService.userName }}</div>
+          <div class="sidebar-user-role">{{ authService.userRole }}</div>
+        </div>
+      </div>
+    }
+  </div>
+
 </div>

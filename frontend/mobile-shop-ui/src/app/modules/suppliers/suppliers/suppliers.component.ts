@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { SupplierService } from '../../../services/supplier.service';
 import { Supplier } from '../../../models/supplier.model';
 import { ToastrService } from 'ngx-toastr';
+import { ConfirmService } from '../../../shared/services/confirm.service';
 
 @Component({
   selector: 'app-suppliers',
@@ -32,7 +33,8 @@ export class SuppliersComponent implements OnInit {
 
   constructor(
     private supplierService: SupplierService,
-    private toastr: ToastrService
+    private toastr: ToastrService,
+    private confirmService: ConfirmService
   ) {}
 
   ngOnInit() { this.load(); }
@@ -169,17 +171,21 @@ export class SuppliersComponent implements OnInit {
     }
   }
 
-  delete(id?: number) {
-    if (!id) return;
-    if (!confirm('Are you sure you want to delete this supplier? This cannot be undone.')) return;
-    this.supplierService.deleteSupplier(id).subscribe({
-      next: () => {
-        this.toastr.success('Supplier deleted');
-        this.load();
-      },
-      error: (err) => this.handleError(err, 'Delete failed')
-    });
-  }
+  async delete(id?: number) {
+  if (!id) return;
+  const confirmed = await this.confirmService.confirm({
+    title:       'Delete Supplier',
+    message:     'Are you sure you want to delete this supplier? This action cannot be undone.',
+    confirmText: 'Yes, Delete',
+    cancelText:  'Cancel',
+    type:        'danger'
+  });
+  if (!confirmed) return;
+  this.supplierService.deleteSupplier(id).subscribe({
+    next: () => { this.toastr.success('Supplier deleted'); this.load(); },
+    error: (err) => this.handleError(err, 'Delete failed')
+  });
+}
 
   // ── Helpers ──
   handleError(err: any, fallback = 'Operation failed') {

@@ -1,0 +1,309 @@
+<div class="admin-wrap">
+
+  <!-- Navbar -->
+  <nav class="admin-nav">
+    <div class="admin-nav-left">
+      <span class="admin-logo">⚙️</span>
+      <span class="admin-title">Mobile Shop Admin</span>
+    </div>
+    <div class="admin-nav-right">
+      <span class="admin-badge">Super Admin</span>
+      <button class="logout-btn" (click)="logout()">Logout</button>
+    </div>
+  </nav>
+
+  <div class="admin-body">
+
+    <!-- KPI Cards -->
+    <div class="kpi-row">
+      <div class="kpi-card blue">
+        <div class="kpi-label">Total Shops</div>
+        <div class="kpi-value">{{ totalTenants }}</div>
+      </div>
+      <div class="kpi-card green">
+        <div class="kpi-label">Active Shops</div>
+        <div class="kpi-value">{{ activeTenants }}</div>
+      </div>
+      <div class="kpi-card purple">
+        <div class="kpi-label">Total Users</div>
+        <div class="kpi-value">{{ totalUsers }}</div>
+      </div>
+      <div class="kpi-card amber">
+        <div class="kpi-label">Total Sales</div>
+        <div class="kpi-value">{{ totalSales }}</div>
+      </div>
+    </div>
+
+    <!-- Tab bar -->
+    <div class="tab-bar">
+      <button [class.active]="activeTab==='tenants'"
+        (click)="activeTab='tenants'">All Shops</button>
+      <button [class.active]="activeTab==='create'"
+        (click)="activeTab='create'">+ Create New Shop</button>
+    </div>
+
+    <!-- ══ ALL TENANTS ══ -->
+    @if (activeTab === 'tenants') {
+
+      <div class="search-row">
+        <div class="search-bar">
+          <span>🔍</span>
+          <input placeholder="Search shops..."
+            [(ngModel)]="searchTerm"
+            (ngModelChange)="applyFilter()">
+        </div>
+      </div>
+
+      <div class="card">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Shop</th>
+              <th>Owner</th>
+              <th>City</th>
+              <th>Users</th>
+              <th>Products</th>
+              <th>Sales</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (t of filtered; track t.id) {
+              <tr>
+                <td>
+                  <div class="shop-cell">
+                    <span class="shop-avatar">{{ t.shopName[0] }}</span>
+                    <div>
+                      <div class="shop-name">{{ t.shopName }}</div>
+                      <div class="shop-meta">{{ t.email }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td>{{ t.ownerName }}</td>
+                <td>{{ t.city }}, {{ t.state }}</td>
+                <td>{{ t.totalUsers }}</td>
+                <td>{{ t.totalProducts }}</td>
+                <td>{{ t.totalSales }}</td>
+                <td>
+                  <span class="status-pill"
+                    [class.active-pill]="t.active"
+                    [class.inactive-pill]="!t.active">
+                    {{ t.active ? 'Active' : 'Inactive' }}
+                  </span>
+                </td>
+                <td>
+                  <div class="action-row">
+                    <button class="btn-view"
+                      (click)="viewUsers(t)">Users</button>
+                    <button class="btn-toggle"
+                      [class.btn-deactivate]="t.active"
+                      [class.btn-activate]="!t.active"
+                      (click)="toggleTenant(t)">
+                      {{ t.active ? 'Deactivate' : 'Activate' }}
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+            @if (filtered.length === 0) {
+              <tr>
+                <td colspan="8" class="empty-state">No shops found</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <!-- ══ CREATE TENANT ══ -->
+    @if (activeTab === 'create') {
+      <div class="card create-card">
+        <div class="create-header">
+          <h2>Create New Shop</h2>
+          <p>Fill in the details below. A welcome email with login
+             credentials will be sent to the owner.</p>
+        </div>
+
+        <div class="form-section">
+          <div class="section-title">Shop Information</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Shop Name *</label>
+              <input [(ngModel)]="form.shopName"
+                placeholder="e.g. Raj Mobiles">
+            </div>
+            <div class="form-group">
+              <label>GST Number</label>
+              <input [(ngModel)]="form.gstNumber"
+                placeholder="e.g. 24ABCDE1234F1Z5">
+            </div>
+            <div class="form-group full">
+              <label>Address</label>
+              <input [(ngModel)]="form.address"
+                placeholder="Street address">
+            </div>
+            <div class="form-group">
+              <label>City</label>
+              <input [(ngModel)]="form.city" placeholder="City">
+            </div>
+            <div class="form-group">
+              <label>State</label>
+              <input [(ngModel)]="form.state" placeholder="State">
+            </div>
+            <div class="form-group">
+              <label>Pincode</label>
+              <input [(ngModel)]="form.pincode" placeholder="Pincode">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="section-title">Owner Account</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Owner Name *</label>
+              <input [(ngModel)]="form.ownerName"
+                placeholder="Full name">
+            </div>
+            <div class="form-group">
+              <label>Phone *</label>
+              <input [(ngModel)]="form.phone"
+                placeholder="10-digit mobile">
+            </div>
+            <div class="form-group">
+              <label>Email *</label>
+              <input type="email" [(ngModel)]="form.email"
+                placeholder="owner@example.com">
+            </div>
+            <div class="form-group">
+              <label>Password *</label>
+              <input type="password" [(ngModel)]="form.password"
+                placeholder="Min 8 characters">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn-ghost"
+            (click)="activeTab='tenants'">Cancel</button>
+          <button class="btn-create"
+            (click)="createTenant()" [disabled]="saving">
+            {{ saving ? 'Creating...' : '✓ Create Shop & Send Email' }}
+          </button>
+        </div>
+      </div>
+    }
+
+  </div>
+
+  <!-- ══ USERS MODAL ══ -->
+  @if (showUsers && selectedTenant) {
+    <div class="modal-backdrop" (click)="showUsers=false">
+      <div class="modal-box large" (click)="$event.stopPropagation()">
+
+        <div class="modal-head">
+          <div>
+            <h2>{{ selectedTenant.shopName }} — Users</h2>
+            <p>Manage staff and owner accounts</p>
+          </div>
+          <button class="modal-close"
+            (click)="showUsers=false">✕</button>
+        </div>
+
+        <div class="modal-body">
+
+          <!-- Add Staff Form -->
+          @if (showAddStaff) {
+            <div class="add-staff-form">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>Staff Name *</label>
+                  <input [(ngModel)]="staffForm.name"
+                    placeholder="Full name">
+                </div>
+                <div class="form-group">
+                  <label>Email *</label>
+                  <input type="email" [(ngModel)]="staffForm.email"
+                    placeholder="staff@example.com">
+                </div>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:4px">
+                <button class="btn-create" (click)="addStaff()">
+                  Add Staff
+                </button>
+                <button class="btn-ghost"
+                  (click)="showAddStaff=false">Cancel</button>
+              </div>
+            </div>
+          }
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (u of tenantUsers; track u.id) {
+                <tr>
+                  <td>
+                    <div class="shop-cell">
+                      <span class="shop-avatar"
+                        [class.purple]="u.role==='STAFF'">
+                        {{ u.name[0] }}
+                      </span>
+                      <span>{{ u.name }}</span>
+                    </div>
+                  </td>
+                  <td>{{ u.email }}</td>
+                  <td>
+                    <span class="role-pill"
+                      [class.owner-pill]="u.role==='OWNER'"
+                      [class.staff-pill]="u.role==='STAFF'">
+                      {{ u.role }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="status-pill"
+                      [class.active-pill]="u.active"
+                      [class.inactive-pill]="!u.active">
+                      {{ u.active ? 'Active' : 'Inactive' }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="action-row">
+                      <button class="btn-view"
+                        (click)="resetPassword(u)">
+                        Reset Pwd
+                      </button>
+                      <button class="btn-toggle"
+                        [class.btn-deactivate]="u.active"
+                        [class.btn-activate]="!u.active"
+                        (click)="toggleUser(u)">
+                        {{ u.active ? 'Deactivate' : 'Activate' }}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div class="modal-foot">
+          <button class="btn-create"
+            (click)="showAddStaff=!showAddStaff">
+            + Add Staff Member
+          </button>
+        </div>
+
+      </div>
+    </div>
+  }
+
+</div>
