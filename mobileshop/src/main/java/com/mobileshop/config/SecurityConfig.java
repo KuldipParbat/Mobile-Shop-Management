@@ -69,8 +69,7 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(List.of(
                 "http://localhost:4200",        // dev
-                "https://mobileshopdemo.netlify.app",
-                "https://mobileshop-management.onrender.com"        // demo production
+                "https://mobileshop-ui.vercel.app"        // demo production
         ));
         config.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
